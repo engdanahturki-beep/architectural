@@ -1,11 +1,11 @@
 import type { Route } from "./+types/home";
-import Navbar from "../Navbar";
+import Navbar from "~/Navbar";
 import {ArrowRight, ArrowUpRight, Clock, Layers} from "lucide-react";
-import Button from "../ui/Button";
-import Upload from "../components/Upload";
+import Button from "~/ui/Button";
+import Upload from "~/components/Upload";
 import {useNavigate} from "react-router";
 import {useEffect, useRef, useState} from "react";
-import {createProject, getProjects} from "../lib/puter.action";
+import {createProject, getProjects} from "~/lib/puter.action";
 
 export function meta({}: Route.MetaArgs) {
     return [
@@ -17,6 +17,7 @@ export function meta({}: Route.MetaArgs) {
 export default function Home() {
     const navigate = useNavigate();
     const [projects, setProjects] = useState<DesignItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const isCreatingProjectRef = useRef(false);
 
     const handleUploadComplete = async (base64Image: string) => {
@@ -35,17 +36,14 @@ export default function Home() {
 
             const saved = await createProject({ item: newItem, visibility: 'private' });
 
-            if(!saved) {
-                console.error("Failed to create project");
-                return false;
+            if(saved) {
+                setProjects((prev) => [saved, ...prev]);
             }
-
-            setProjects((prev) => [saved, ...prev]);
 
             navigate(`/visualizer/${newId}`, {
                 state: {
-                    initialImage: saved.sourceImage,
-                    initialRendered: saved.renderedImage || null,
+                    initialImage: saved?.sourceImage || base64Image,
+                    initialRender: saved?.renderedImage || null,
                     name
                 }
             });
@@ -58,9 +56,13 @@ export default function Home() {
 
     useEffect(() => {
         const fetchProjects = async () => {
-            const items = await getProjects();
-
-            setProjects(items)
+            setIsLoading(true);
+            try {
+                const items = await getProjects();
+                setProjects(items);
+            } finally {
+                setIsLoading(false);
+            }
         }
 
         fetchProjects();
@@ -123,7 +125,21 @@ export default function Home() {
                     </div>
 
                     <div className="projects-grid">
-                        {projects.map(({id, name, renderedImage, sourceImage, timestamp}) => (
+                        {isLoading ? (
+                            Array.from({ length: 3 }).map((_, i) => (
+                                <div key={i} className="project-card animate-pulse">
+                                    <div className="preview bg-gray-200 h-48 rounded-t-xl" />
+                                    <div className="card-body p-4">
+                                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                                        <div className="h-3 bg-gray-200 rounded w-1/2" />
+                                    </div>
+                                </div>
+                            ))
+                        ) : projects.length === 0 ? (
+                            <div className="col-span-full py-20 text-center text-gray-500">
+                                <p>No projects found. Start building your first design!</p>
+                            </div>
+                        ) : projects.map(({id, name, renderedImage, sourceImage, timestamp}) => (
                             <div key={id} className="project-card group" onClick={() => navigate(`/visualizer/${id}`)}>
                                 <div className="preview">
                                     <img  src={renderedImage || sourceImage} alt="Project"

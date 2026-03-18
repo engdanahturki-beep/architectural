@@ -1,11 +1,13 @@
 import puter from "@heyputer/puter.js";
 // import {getOrCreateHostingConfig, uploadImageToHosting} from "./puter.hosting";
 // import {isHostedUrl} from "./utils";
-// import {PUTER_WORKER_URL} from "./constants";
 
-const PUTER_WORKER_URL = "";
+import { PUTER_WORKER_URL } from "~/lib/constants";
 
-const isHostedUrl = (url) => false;
+const isHostedUrl = (url: string) => {
+    if(!url) return false;
+    return url.startsWith('http') || url.startsWith('https') || url.startsWith('puter://');
+};
 
 export const signIn = async () => {
     try {
@@ -63,7 +65,7 @@ export const createProject = async ({ item, visibility = "private" }: CreateProj
     const hostedRender = null; // projectId && item.renderedImage ?
         // await uploadImageToHosting({ hosting, url: item.renderedImage, projectId, label: 'rendered', }) : null;
 
-    const resolvedSource = (isHostedUrl(item.sourceImage)
+    const resolvedSource = (isHostedUrl(item.sourceImage) || item.sourceImage.startsWith('data:image/')
             ? item.sourceImage
             : ''
     );
@@ -73,7 +75,7 @@ export const createProject = async ({ item, visibility = "private" }: CreateProj
         return null;
     }
 
-    const resolvedRender = item.renderedImage && isHostedUrl(item.renderedImage)
+    const resolvedRender = (item.renderedImage && (isHostedUrl(item.renderedImage) || item.renderedImage.startsWith('data:image/')))
             ? item.renderedImage
             : undefined;
 

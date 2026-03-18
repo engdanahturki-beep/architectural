@@ -15,7 +15,7 @@ import {
   signIn as puterSignIn,
   signOut as puterSignOut,
   isSignedIn as puterIsSignedIn,
-} from "./lib/puter.action";
+} from "~/lib/puter.action";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
