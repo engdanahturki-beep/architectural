@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react'
 import {useOutletContext} from "react-router";
 import {CheckCircle2, ImageIcon, UploadIcon} from "lucide-react";
-import {PROGRESS_INCREMENT, REDIRECT_DELAY_MS, PROGRESS_INTERVAL_MS} from "~/lib/constants";
+import {PROGRESS_INCREMENT, REDIRECT_DELAY_MS, PROGRESS_INTERVAL_MS} from "../lib/constants";
 
 interface UploadProps {
     onComplete?: (base64Data: string) => void;
@@ -29,26 +29,19 @@ const Upload = ({ onComplete }: UploadProps) => {
         };
     }, []);
 
-    const processFile = (file: File) => {
-        if (!isSignedIn) {
-            console.warn("Upload blocked: User not signed in");
-            return;
-        }
+    const processFile = useCallback((file: File) => {
+        if (!isSignedIn) return;
 
         setFile(file);
         setProgress(0);
 
         const reader = new FileReader();
-        reader.onerror = (e) => {
-            console.error("FileReader error:", e);
+        reader.onerror = () => {
             setFile(null);
             setProgress(0);
         };
-        reader.onload = () => {
+        reader.onloadend = () => {
             const base64Data = reader.result as string;
-            console.log("File loaded as base64, starting progress simulation...");
-
-            if (intervalRef.current) clearInterval(intervalRef.current);
 
             intervalRef.current = setInterval(() => {
                 setProgress((prev) => {
@@ -58,17 +51,8 @@ const Upload = ({ onComplete }: UploadProps) => {
                             clearInterval(intervalRef.current);
                             intervalRef.current = null;
                         }
-                        console.log("Progress 100%, scheduling onComplete...");
-                        timeoutRef.current = setTimeout(async () => {
-                            try {
-                                if (onComplete) {
-                                    await onComplete(base64Data);
-                                }
-                            } catch (err) {
-                                console.error("onComplete failed:", err);
-                                setFile(null);
-                                setProgress(0);
-                            }
+                        timeoutRef.current = setTimeout(() => {
+                            onComplete?.(base64Data);
                             timeoutRef.current = null;
                         }, REDIRECT_DELAY_MS);
                         return 100;
@@ -78,7 +62,7 @@ const Upload = ({ onComplete }: UploadProps) => {
             }, PROGRESS_INTERVAL_MS);
         };
         reader.readAsDataURL(file);
-    };
+    }, [isSignedIn, onComplete]);
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
