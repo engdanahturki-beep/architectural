@@ -1,53 +1,19 @@
 import puter from "@heyputer/puter.js";
-// import {getOrCreateHostingConfig, uploadImageToHosting} from "./puter.hosting";
-// import {isHostedUrl} from "./utils";
+import {getOrCreateHostingConfig, uploadImageToHosting} from "./puter.hosting";
+import {isHostedUrl} from "./utils";
+import {PUTER_WORKER_URL} from "./constants";
 
-import { PUTER_WORKER_URL } from "~/lib/constants";
+export const signIn = async () => await puter.auth.signIn();
 
-const isHostedUrl = (url: string) => {
-    if(!url) return false;
-    return url.startsWith('http') || url.startsWith('https') || url.startsWith('puter://');
-};
-
-export const signIn = async () => {
-    try {
-        console.log("Calling puter.auth.signIn()...");
-        const result = await puter.auth.signIn();
-        console.log("puter.auth.signIn() result:", result);
-        return result;
-    } catch (e) {
-        console.error("Puter sign in error in puter.action.ts:", e);
-        throw e;
-    }
-};
-
-export const signOut = async () => {
-    try {
-        console.log("Calling puter.auth.signOut()...");
-        const result = await puter.auth.signOut();
-        console.log("puter.auth.signOut() result:", result);
-        return result;
-    } catch (e) {
-        console.error("Puter sign out error in puter.action.ts:", e);
-    }
-};
+export const signOut = () => puter.auth.signOut();
+export const isSignedIn = () => puter.auth.isSignedIn();
 
 export const getCurrentUser = async () => {
     try {
-        console.log("Calling puter.auth.getUser()...");
-        const user = await puter.auth.getUser();
-        console.log("Puter getUser response:", user);
-        return user;
-    } catch (e) {
-        console.error("Puter getUser error in puter.action.ts:", e);
+        return await puter.auth.getUser();
+    } catch {
         return null;
     }
-}
-
-export const isSignedIn = () => {
-    const signedIn = puter.auth.isSignedIn();
-    console.log("Puter isSignedIn():", signedIn);
-    return signedIn;
 }
 
 export const createProject = async ({ item, visibility = "private" }: CreateProjectParams): Promise<DesignItem | null | undefined> => {
@@ -57,15 +23,15 @@ export const createProject = async ({ item, visibility = "private" }: CreateProj
     }
     const projectId = item.id;
 
-    // const hosting = await getOrCreateHostingConfig();
+    const hosting = await getOrCreateHostingConfig();
 
-    const hostedSource = null; // projectId ?
-        // await uploadImageToHosting({ hosting, url: item.sourceImage, projectId, label: 'source', }) : null;
+    const hostedSource = projectId ?
+        await uploadImageToHosting({ hosting, url: item.sourceImage, projectId, label: 'source', }) : null;
 
-    const hostedRender = null; // projectId && item.renderedImage ?
-        // await uploadImageToHosting({ hosting, url: item.renderedImage, projectId, label: 'rendered', }) : null;
+    const hostedRender = projectId && item.renderedImage ?
+        await uploadImageToHosting({ hosting, url: item.renderedImage, projectId, label: 'rendered', }) : null;
 
-    const resolvedSource = (isHostedUrl(item.sourceImage) || item.sourceImage.startsWith('data:image/')
+    const resolvedSource = hostedSource?.url || (isHostedUrl(item.sourceImage)
             ? item.sourceImage
             : ''
     );
@@ -75,7 +41,9 @@ export const createProject = async ({ item, visibility = "private" }: CreateProj
         return null;
     }
 
-    const resolvedRender = (item.renderedImage && (isHostedUrl(item.renderedImage) || item.renderedImage.startsWith('data:image/')))
+    const resolvedRender = hostedRender?.url
+        ? hostedRender?.url
+        : item.renderedImage && isHostedUrl(item.renderedImage)
             ? item.renderedImage
             : undefined;
 

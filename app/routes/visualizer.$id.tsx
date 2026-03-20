@@ -1,4 +1,4 @@
-import { useNavigate, useOutletContext, useParams, useLocation} from "react-router";
+import { useLocation, useNavigate, useOutletContext, useParams} from "react-router";
 import {useEffect, useRef, useState} from "react";
 import {generate3DView} from "~/lib/ai.action";
 import {Box, Download, RefreshCcw, Share2, X} from "lucide-react";
@@ -12,14 +12,13 @@ const VisualizerId = () => {
     const location = useLocation();
     const { userId } = useOutletContext<AuthContext>()
 
-    const locationState = location.state as VisualizerLocationState;
     const hasInitialGenerated = useRef(false);
 
     const [project, setProject] = useState<DesignItem | null>(null);
     const [isProjectLoading, setIsProjectLoading] = useState(true);
 
     const [isProcessing, setIsProcessing] = useState(false);
-    const [currentImage, setCurrentImage] = useState<string | null>(locationState?.initialRender || null);
+    const [currentImage, setCurrentImage] = useState<string | null>(null);
 
     const handleBack = () => navigate('/');
     const handleExport = () => {
@@ -77,25 +76,24 @@ const VisualizerId = () => {
 
             setIsProjectLoading(true);
 
-            const fetchedProject = await getProjectById({ id });
+            let fetchedProject = await getProjectById({ id });
+
+            const state = location.state as VisualizerLocationState;
+            if (!fetchedProject && state?.initialImage) {
+                fetchedProject = {
+                    id: id,
+                    name: state.name || `Residence ${id}`,
+                    sourceImage: state.initialImage,
+                    renderedImage: state.initialRendered || null,
+                    timestamp: Date.now(),
+                    ownerId: state.ownerId || userId || null,
+                };
+            }
 
             if (!isMounted) return;
 
-            if (fetchedProject) {
-                setProject(fetchedProject);
-                setCurrentImage(fetchedProject.renderedImage || null);
-            } else if (locationState?.initialImage) {
-                // Fallback to location state if project fetch fails (e.g. during upload)
-                setProject({
-                    id: id as string,
-                    name: locationState.name || `Residence ${id}`,
-                    sourceImage: locationState.initialImage,
-                    renderedImage: locationState.initialRender || null,
-                    timestamp: Date.now(),
-                });
-                setCurrentImage(locationState.initialRender || null);
-            }
-
+            setProject(fetchedProject);
+            setCurrentImage(fetchedProject?.renderedImage || null);
             setIsProjectLoading(false);
             hasInitialGenerated.current = false;
         };
