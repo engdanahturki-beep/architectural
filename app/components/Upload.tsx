@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react'
 import {useOutletContext} from "react-router";
 import {CheckCircle2, ImageIcon, UploadIcon} from "lucide-react";
-import {PROGRESS_INCREMENT, REDIRECT_DELAY_MS, PROGRESS_INTERVAL_MS} from "../lib/constants";
+import {PROGRESS_INCREMENT, REDIRECT_DELAY_MS, PROGRESS_INTERVAL_MS} from "~/lib/constants";
 
 interface UploadProps {
     onComplete?: (base64Data: string) => void;
@@ -81,8 +81,12 @@ const Upload = ({ onComplete }: UploadProps) => {
         if (!isSignedIn) return;
 
         const droppedFile = e.dataTransfer.files[0];
-        const allowedTypes = ['image/jpeg', 'image/png'];
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
         if (droppedFile && allowedTypes.includes(droppedFile.type)) {
+            if (droppedFile.size > 10 * 1024 * 1024) {
+                alert('File size too large. Maximum size is 10 MB.');
+                return;
+            }
             processFile(droppedFile);
         }
     };
@@ -92,6 +96,10 @@ const Upload = ({ onComplete }: UploadProps) => {
 
         const selectedFile = e.target.files?.[0];
         if (selectedFile) {
+            if (selectedFile.size > 10 * 1024 * 1024) {
+                alert('File size too large. Maximum size is 10 MB.');
+                return;
+            }
             processFile(selectedFile);
         }
     };
@@ -122,7 +130,7 @@ const Upload = ({ onComplete }: UploadProps) => {
                                 "Click to upload or just drag and drop"
                             ): ("Sign in or sign up with Puter to upload")}
                         </p>
-                        <p className="help">Maximum file size 50 MB.</p>
+                        <p className="help">Maximum file size 10 MB.</p>
                     </div>
                 </div>
             ) : (

@@ -12,6 +12,8 @@ const VisualizerId = () => {
     const location = useLocation();
     const { userId } = useOutletContext<AuthContext>()
 
+    const state = location.state as VisualizerLocationState;
+
     const hasInitialGenerated = useRef(false);
 
     const [project, setProject] = useState<DesignItem | null>(null);
@@ -33,13 +35,19 @@ const VisualizerId = () => {
     }
 
     const runGeneration = async (item: DesignItem) => {
-        if(!id || !item.sourceImage) return;
+        if(!id || !item.sourceImage) {
+            console.warn('runGeneration aborted: missing id or sourceImage', { id, sourceImage: !!item.sourceImage });
+            return;
+        }
 
         try {
+            console.log('runGeneration started for item:', item.id);
             setIsProcessing(true);
             const result = await generate3DView({ sourceImage: item.sourceImage });
+            console.log('generate3DView result:', { hasRenderedImage: !!result.renderedImage });
 
             if(result.renderedImage) {
+                console.log('Generation success, updating state...');
                 setCurrentImage(result.renderedImage);
 
                 const updatedItem = {
@@ -51,15 +59,23 @@ const VisualizerId = () => {
                     isPublic: item.isPublic ?? false,
                 }
 
+                console.log('Saving project to Puter...', updatedItem);
                 const saved = await createProject({ item: updatedItem, visibility: "private" })
 
                 if(saved) {
+                    console.log('Project saved successfully:', saved);
                     setProject(saved);
                     setCurrentImage(saved.renderedImage || result.renderedImage);
+                } else {
+                    console.warn('Project save returned null, using generated image in UI.');
                 }
+            } else {
+                console.warn('Generation returned no image.');
+                alert('Generation failed: No image was returned by the AI.');
             }
         } catch (error) {
             console.error('Generation failed: ', error)
+            alert(`Generation failed: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsProcessing(false);
         }
@@ -70,32 +86,44 @@ const VisualizerId = () => {
 
         const loadProject = async () => {
             if (!id) {
+                console.warn('loadProject: no id provided');
                 setIsProjectLoading(false);
                 return;
             }
 
+            console.log('loadProject: fetching project by id', id);
             setIsProjectLoading(true);
 
             let fetchedProject = await getProjectById({ id });
+            console.log('loadProject: fetchedProject', fetchedProject);
 
-            const state = location.state as VisualizerLocationState;
             if (!fetchedProject && state?.initialImage) {
+                console.log('loadProject: project not found on server, using location state');
                 fetchedProject = {
-                    id: id,
+                    id: id as string,
                     name: state.name || `Residence ${id}`,
                     sourceImage: state.initialImage,
-                    renderedImage: state.initialRendered || null,
+                    renderedImage: state.initialRender || null,
                     timestamp: Date.now(),
                     ownerId: state.ownerId || userId || null,
                 };
             }
 
-            if (!isMounted) return;
+            if (!isMounted) {
+                console.log('loadProject: component unmounted, ignoring result');
+                return;
+            }
 
             setProject(fetchedProject);
             setCurrentImage(fetchedProject?.renderedImage || null);
             setIsProjectLoading(false);
             hasInitialGenerated.current = false;
+
+            if (!fetchedProject) {
+                console.warn('loadProject: no project found and no state available');
+                alert('Project not found. Please try uploading again.');
+                navigate('/');
+            }
         };
 
         loadProject();
@@ -106,6 +134,12 @@ const VisualizerId = () => {
     }, [id]);
 
     useEffect(() => {
+        console.log('Effect [project, isProjectLoading] triggered:', { 
+            isProjectLoading, 
+            hasInitialGenerated: hasInitialGenerated.current, 
+            hasSourceImage: !!project?.sourceImage,
+            hasRenderedImage: !!project?.renderedImage
+        });
         if (
             isProjectLoading ||
             hasInitialGenerated.current ||
@@ -114,11 +148,13 @@ const VisualizerId = () => {
             return;
 
         if (project.renderedImage) {
+            console.log('Project already has rendered image, skipping generation.');
             setCurrentImage(project.renderedImage);
             hasInitialGenerated.current = true;
             return;
         }
 
+        console.log('Triggering runGeneration...');
         hasInitialGenerated.current = true;
         void runGeneration(project);
     }, [project, isProjectLoading]);
@@ -146,6 +182,15 @@ const VisualizerId = () => {
                         </div>
 
                         <div className="panel-actions">
+                            {!currentImage && !isProcessing && (
+                                <Button
+                                    size="sm"
+                                    onClick={() => project && runGeneration(project)}
+                                    className="retry"
+                                >
+                                    <RefreshCcw className="w-4 h-4 mr-2" /> Retry
+                                </Button>
+                            )}
                             <Button
                                 size="sm"
                                 onClick={handleExport}

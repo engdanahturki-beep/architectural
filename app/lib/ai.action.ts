@@ -1,33 +1,61 @@
 import puter from "@heyputer/puter.js";
-import { PUTER_WORKER_URL, ROOMIFY_RENDER_PROMPT } from "~/lib/constants";
+import {ROOMIFY_RENDER_PROMPT} from "./constants";
 
-export const generate3DView = async ({ sourceImage, projectId = null }: Generate3DViewParams): Promise<RenderCompletePayload> => {
-    if(!PUTER_WORKER_URL) {
-        throw new Error("Missing VITE_PUTER_WORKER_URL");
+export const fetchAsDataUrl = async (url: string): Promise<string> => {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
     }
 
+    const blob = await response.blob();
+
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+};
+
+export const generate3DView = async ({ sourceImage }: Generate3DViewParams) => {
+    const dataUrl = sourceImage.startsWith('data:')
+        ? sourceImage
+        : await fetchAsDataUrl(sourceImage);
+
+    const base64Data = dataUrl.split(',')[1];
+    const mimeType = dataUrl.split(';')[0].split(':')[1];
+
+    if(!mimeType || !base64Data) throw new Error('Invalid source image payload');
+
+    console.log('Generating 3D view with OpenAI...', { mimeType, base64Length: base64Data.length });
+    let response;
     try {
-        const response = await puter.workers.exec(`${PUTER_WORKER_URL}/api/ai/render`, {
-            method: 'POST',
-            body: JSON.stringify({
-                image: sourceImage,
-                prompt: ROOMIFY_RENDER_PROMPT,
-                projectId
-            })
+        response = await puter.ai.txt2img(ROOMIFY_RENDER_PROMPT, {
+            provider: "openai",
+            model: "dall-e-3",
+            input_image: base64Data,
+            input_image_mime_type: mimeType,
         });
-
-        if(!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to generate 3D view: ${errorText}`);
-        }
-
-        const data = await response.json();
-        return {
-            renderedImage: data.renderedImage,
-            renderedPath: data.renderedPath
-        };
-    } catch (error) {
-        console.error("Error in generate3DView:", error);
-        throw error;
+        console.log('Puter AI response received:', response);
+    } catch (err) {
+        console.error('Puter SDK txt2img error:', err);
+        throw err;
     }
+
+    let rawImageUrl: string | null = null;
+    if (response instanceof HTMLImageElement) {
+        rawImageUrl = response.src;
+    } else if (typeof response === 'object' && response !== null && 'src' in response) {
+        rawImageUrl = (response as any).src;
+    } else if (typeof response === 'string') {
+        rawImageUrl = response;
+    }
+
+    if (!rawImageUrl) return { renderedImage: null, renderedPath: undefined };
+
+    const renderedImage = rawImageUrl.startsWith('data:')
+        ? rawImageUrl : await fetchAsDataUrl(rawImageUrl);
+
+    return { renderedImage, renderedPath: undefined };
 }
