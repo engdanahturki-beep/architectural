@@ -1,10 +1,6 @@
 const PROJECT_PREFIX = 'roomify_project_';
 
 const router = puter.router;
-// ...
-if (!router) {
-    throw new Error("Puter router is not available in this environment.");
-}
 
 const jsonError = (status, message, extra = {}) => {
     return new Response(JSON.stringify({  error: message, ...extra }), {
