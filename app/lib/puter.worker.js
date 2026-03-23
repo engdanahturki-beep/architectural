@@ -1,13 +1,9 @@
 const PROJECT_PREFIX = 'roomify_project_';
 
-// Ensure puter is accessible (sometimes global, sometimes via self)
-const _puter = (typeof puter !== 'undefined') ? puter : (typeof self !== 'undefined' && self.puter) ? self.puter : null;
+// إذا استمر الخطأ، قم بإلغاء التعليق عن السطر التالي:
+// const puter = require('@heyputer/puter.js');
 
-if (!_puter) {
-    throw new Error("Puter object is not available. This script must be run as a Puter Worker.");
-}
-
-const router = _puter.router;
+const router = puter.router;
 
 const jsonError = (status, message, extra = {}) => {
     return new Response(JSON.stringify({  error: message, ...extra }), {
