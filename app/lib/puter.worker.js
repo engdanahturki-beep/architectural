@@ -1,6 +1,6 @@
 const PROJECT_PREFIX = 'roomify_project_';
 
-const router = (typeof puter !== 'undefined' ? puter : self.puter).router;
+const router = puter.router;
 
 const jsonError = (status, message, extra = {}) => {
     return new Response(JSON.stringify({  error: message, ...extra }), {
