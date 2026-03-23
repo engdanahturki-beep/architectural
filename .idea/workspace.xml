@@ -5,12 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="47c1d797-f2d9-4110-b20d-73bc48549cd1" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/app/lib/puter.worker.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/components/Upload.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/components/Upload.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/lib/ai.action.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/lib/ai.action.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/lib/constants.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/lib/constants.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/routes/home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/home.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/routes/visualizer.$id.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/visualizer.$id.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/lib/puter.hosting.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/lib/puter.hosting.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -78,7 +75,7 @@
       <updated>1773783019108</updated>
       <workItem from="1773783019980" duration="13948000" />
       <workItem from="1773840711735" duration="17459000" />
-      <workItem from="1774034899217" duration="10819000" />
+      <workItem from="1774034899217" duration="15348000" />
     </task>
     <servers />
   </component>
@@ -96,6 +93,12 @@
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/type.d.ts</url>
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/app/lib/puter.worker.js</url>
+          <line>58</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

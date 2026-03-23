@@ -16,15 +16,28 @@ export const getOrCreateHostingConfig = async (): Promise<HostingConfig | null> 
     const subdomain = createHostingSlug();
 
     try {
-        const created = await puter.hosting.create(subdomain, '.');
+        console.log('Creating hosting with subdomain:', subdomain);
+        const created = await puter.hosting.create(subdomain, '/');
+        console.log('Hosting created:', created);
 
         const record = { subdomain: created.subdomain };
 
         await puter.kv.set(HOSTING_CONFIG_KEY, record);
 
         return record;
-    } catch (e) {
-        console.warn(`Could not find subdomain: ${e}`);
+    } catch (e: any) {
+        console.error('Failed to create hosting:', e);
+        if (e.message && e.message.includes('path')) {
+             console.log('Attempting alternative path " " (empty string) for Puter SDK compatibility.');
+             try {
+                 const created = await puter.hosting.create(subdomain, '');
+                 const record = { subdomain: created.subdomain };
+                 await puter.kv.set(HOSTING_CONFIG_KEY, record);
+                 return record;
+             } catch (e2) {
+                 console.error('Failed alternative path creation:', e2);
+             }
+        }
         return null;
     }
 }
